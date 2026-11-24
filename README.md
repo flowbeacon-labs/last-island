@@ -3,7 +3,7 @@
 The game map was expanded from **128 × 128** game units to **256 × 256** (four times the playable land area).
 
 ## Improvements
-- **14 houses** across central and outer settlements, up from four, along with new decorative plateaus, four corner beacons, more rocky cover and forests.
+- **14 houses** across central and outer settlements, up from four, along with new decorative plateaus, four corner beacons, more rocky cover and open sightlines (trees removed).
 - **40 loot pickups** in an expanded network of camps and **14 health kits**, spread into new outer districts.
 - **12 bots** now spawn across the larger island and use a resized **6-unit A* navigation grid** (43 × 43 cells).
 - Minimap scales its player, opponent, cover, loot, and storm markers to the expanded land area.
