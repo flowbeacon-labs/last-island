@@ -286,7 +286,7 @@ function stickEnd(e){if(stickPointer!==e.pointerId)return;stickPointer=null;touc
 for(const evt of ['pointerup','pointercancel','lostpointercapture'])stickZone.addEventListener(evt,stickEnd);
 for(const [id,field] of [['fire','fire'],['jump','jump']]){const b=ui(id);b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);touch[field]=true;});for(const evt of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(evt,()=>{touch[field]=false;});}
 cv.addEventListener('pointerdown',e=>{if(mode!=='playing')return;pointerId=e.pointerId;pointerX=e.clientX;pointerY=e.clientY;cv.setPointerCapture(e.pointerId);if(e.pointerType==='mouse')mouseDown=true;});
-cv.addEventListener('pointermove',e=>{if(e.pointerId!==pointerId||mode!=='playing')return;const dx=e.clientX-pointerX,dy=e.clientY-pointerY;pointerX=e.clientX;pointerY=e.clientY;yaw+=dx*.006;pitch=clamp(pitch-dy*.0035,-.24,.65);});
+cv.addEventListener('pointermove',e=>{if(e.pointerId!==pointerId||mode!=='playing')return;const dx=e.clientX-pointerX,dy=e.clientY-pointerY;pointerX=e.clientX;pointerY=e.clientY;/* Drag left turns the view left; drag right turns it right. */yaw-=dx*.006;pitch=clamp(pitch-dy*.0035,-.24,.65);});
 for(const evt of ['pointerup','pointercancel','lostpointercapture'])cv.addEventListener(evt,e=>{if(e.pointerId===pointerId){pointerId=-1;mouseDown=false;}});
 ui('reload').addEventListener('click',beginReload);
 for(const b of document.querySelectorAll('.weapon-slot'))b.addEventListener('click',()=>equipWeapon(b.dataset.weapon));
