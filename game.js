@@ -271,7 +271,7 @@ function drawMap(){if(!mapCtx||!player)return;const c=mapCtx,w=mapCanvas.width,h
 }
 ui('map-toggle').addEventListener('click',()=>ui('minimap-wrap').classList.toggle('collapsed'));
 function render(){const ratio=Math.min(2,window.devicePixelRatio||1),w=Math.max(2,Math.floor(cv.clientWidth*ratio)),h=Math.max(2,Math.floor(cv.clientHeight*ratio));if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;gl.viewport(0,0,w,h);}gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
- if(!player)return;drawMap();const eyex=player.x-Math.sin(yaw)*12,eyez=player.z-Math.cos(yaw)*12,eyey=player.y+6.1+Math.sin(pitch)*7;const eye=[eyex,eyey,eyez],target=[player.x,player.y+1.35,player.z+3*Math.cos(yaw)];vp=matMul(perspective(Math.PI/3,cv.width/cv.height,.1,410),lookAt(eye,target));gl.uniformMatrix4fv(uVP,false,vp);gl.uniform3fv(uEye,eye);
+ if(!player)return;drawMap();const eyex=player.x-Math.sin(yaw)*12,eyez=player.z-Math.cos(yaw)*12,eyey=player.y+6.1+Math.sin(pitch)*7;const eye=[eyex,eyey,eyez],target=[player.x+3*Math.sin(yaw),player.y+1.35,player.z+3*Math.cos(yaw)];vp=matMul(perspective(Math.PI/3,cv.width/cv.height,.1,410),lookAt(eye,target));gl.uniformMatrix4fv(uVP,false,vp);gl.uniform3fv(uEye,eye);
  for(const o of staticMeshes)draw(o.shape,o.x,o.y,o.z,o.sx,o.sy,o.sz,o.color,o.angle);
  for(const p of supplies)if(p.active){draw('box',p.x,.42,p.z,1.7,.85,1.7,0xf5f7e4);draw('box',p.x,.88,p.z,.35,.15,1.12,COLORS.med);draw('box',p.x,.89,p.z,1.12,.15,.35,COLORS.med);}
  for(const box of loot)if(box.active){const y=.68+Math.sin(time*2+box.x)*.14,color=box.type==='armor'?0x6ed9fe:box.type==='rapid'?0xffe26e:box.type==='heavy'?0xff9b71:0xe9ceff;draw('box',box.x,y,box.z,1.35,1.12,1.35,color,time*.5);draw('box',box.x,y+.65,box.z,.65,.16,.65,0xffffff,time*.5);}
@@ -287,7 +287,7 @@ function stickEnd(e){if(stickPointer!==e.pointerId)return;stickPointer=null;touc
 for(const evt of ['pointerup','pointercancel','lostpointercapture'])stickZone.addEventListener(evt,stickEnd);
 for(const [id,field] of [['fire','fire'],['jump','jump']]){const b=ui(id);b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);touch[field]=true;});for(const evt of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(evt,()=>{touch[field]=false;});}
 cv.addEventListener('pointerdown',e=>{if(mode!=='playing')return;pointerId=e.pointerId;pointerX=e.clientX;pointerY=e.clientY;cv.setPointerCapture(e.pointerId);if(e.pointerType==='mouse')mouseDown=true;});
-cv.addEventListener('pointermove',e=>{if(e.pointerId!==pointerId||mode!=='playing')return;const dx=e.clientX-pointerX,dy=e.clientY-pointerY;pointerX=e.clientX;pointerY=e.clientY;/* Drag left turns the view left; drag right turns it right. */yaw-=dx*.006;pitch=clamp(pitch-dy*.0035,-.24,.65);});
+cv.addEventListener('pointermove',e=>{if(e.pointerId!==pointerId||mode!=='playing')return;const dx=e.clientX-pointerX,dy=e.clientY-pointerY;pointerX=e.clientX;pointerY=e.clientY;/* Positive drag rotates the avatar and camera toward screen-right. */yaw+=dx*.006;pitch=clamp(pitch-dy*.0035,-.24,.65);});
 for(const evt of ['pointerup','pointercancel','lostpointercapture'])cv.addEventListener(evt,e=>{if(e.pointerId===pointerId){pointerId=-1;mouseDown=false;}});
 ui('reload').addEventListener('click',beginReload);
 for(const b of document.querySelectorAll('.weapon-slot'))b.addEventListener('click',()=>equipWeapon(b.dataset.weapon));
