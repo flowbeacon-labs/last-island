@@ -82,7 +82,7 @@ function world(){staticMeshes.length=0;obstacles.length=0;supplies.length=0;loot
  houses.forEach(([x,z],i)=>{put('box',x,2.5,z,8,5,7,i%2?0xffd69c:0xf1d6b7);put('cone',x,6,z,11,4,10,i%2?COLORS.roof2:COLORS.roof,Math.PI/4);put('box',x,1.9,z+3.53,1.8,3,.2,COLORS.wood);obstacles.push({x,z,r:5.1});});
  // Larger rock clusters provide cover in the extended outer districts.
  for(let i=0;i<70;i++){const x=rndCoord(),z=rndCoord();if(Math.hypot(x,z)<13||obstacles.some(o=>Math.hypot(x-o.x,z-o.z)<8))continue;const sz=1.8+layoutRand()*2.4;put('sphere',x,sz*.35,z,sz*1.8,sz,sz*1.25,i%2?COLORS.stone:COLORS.stone2);obstacles.push({x,z,r:sz*.85});}
- for(let i=0;i<100;i++){const x=rndCoord(),z=rndCoord();if(Math.hypot(x,z)<12||obstacles.some(o=>Math.hypot(x-o.x,z-o.z)<7))continue;const h=3.3+layoutRand()*2.5;put('cylinder',x,h/2,z,.8,h,.8,COLORS.trunk);for(let j=0;j<3;j++)put('cone',x,h+1+j*.9,z,3.7-j*.55,2.9,3.7-j*.55,j%2?COLORS.palm:COLORS.palm2);}
+ // Trees removed to prevent camera and aiming occlusion; houses, rocks and landmarks remain.
  for(const [x,z] of [[8,9],[-36,28],[38,22],[-35,-35],[13,-38],[37,-37],[-108,74],[102,65],[-92,-98],[84,-101],[7,108],[-109,-12],[107,-27],[46,-91]]){const pos=findOpenCamp(x,z);supplies.push({...pos,active:true});}
  KIT_POSITIONS.forEach(([x,z],i)=>{const pos=findOpenCamp(x,z);loot.push({...pos,type:i%4===0?'armor':i%4===1?'rapid':i%4===2?'ammo':'heavy',active:true});});
  CAMP_POSITIONS.forEach(([x,z],i)=>{
