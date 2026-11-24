@@ -1,3 +1,27 @@
+# Last Island 3D — Expanded Island Update
+
+The game map was expanded from **128 × 128** game units to **256 × 256** (four times the playable land area).
+
+## Improvements
+- **14 houses** across central and outer settlements, up from four, along with new decorative plateaus, four corner beacons, more rocky cover and forests.
+- **40 loot pickups** in an expanded network of camps and **14 health kits**, spread into new outer districts.
+- **12 bots** now spawn across the larger island and use a resized **6-unit A* navigation grid** (43 × 43 cells).
+- Minimap scales its player, opponent, cover, loot, and storm markers to the expanded land area.
+- The storm begins at 122 units and closes over **330 seconds (5 minutes 30 seconds)** instead of 195 seconds.
+- Existing third-person controls, aim assist, weapon slots, parachute, combat, and mobile UI remain intact.
+
+## Playing
+Open `index.html` in a WebGL-enabled browser, or visit https://flowbeacon-labs.github.io/last-island/ once GitHub Pages finishes deployment. No game server is needed.
+
+## Publishing
+Repository: https://github.com/flowbeacon-labs/last-island
+GitHub Pages: Settings → Pages → Deploy from branch → main → /(root).
+
+## Validation notes
+The source constants, map references, navigation bounds, and minimap scaling can be checked statically. A real browser/GPU playtest is still needed to verify frame rate, bot routes, pickup access and the difficulty balance over a full match.
+
+---
+
 # Last Island 3D — Phase 5: Weapon Inventory & Cover Navigation
 
 This build includes all Phase 1–4 features plus **three persistent weapon slots** and **A* cover navigation for bots**.
@@ -7,7 +31,7 @@ This build includes all Phase 1–4 features plus **three persistent weapon slot
 - The three slots (Blaster / Rapid / Heavy) are independently unlocked through loot. Weapon pickups unlock or replenish the corresponding slot; picking up a new weapon automatically equips it.
 - Each slot preserves its own magazine and reserve ammunition while you switch. Reload works on the equipped weapon only; switching cancels an unfinished reload without changing the saved ammo. Ammo boxes replenish the currently equipped weapon.
 - Switch by clicking/tapping a slot, pressing `1`, `2`, or `3` on desktop, mouse-wheel, or the on-screen **SWITCH** button. Locked slots are disabled.
-- Bots use a bounded **A* 4-unit navigation grid** for routing around buildings and rocks when direct movement would be blocked. Waypoints are cached and refreshed periodically; diagonal corner cutting is disabled, and stuck bots trigger replanning. Bots still strafe, flank, retreat and prioritize the safe zone.
+- Bots use a bounded **A* 6-unit navigation grid** for routing around buildings and rocks when direct movement would be blocked. Waypoints are cached and refreshed periodically; diagonal corner cutting is disabled, and stuck bots trigger replanning. Bots still strafe, flank, retreat and prioritize the safe zone.
 - This is lightweight obstacle navigation, not a full NavMesh or strategic squad AI.
 
 ## Run and testing
@@ -16,7 +40,7 @@ Extract the ZIP and open `index.html` using a modern WebGL-compatible browser. `
 
 ## Publish
 
-Upload `index.html`, `game.js`, `style.css`, and `README.md` to the root of a public `last-island-3d` repository; configure GitHub Pages **Settings → Pages → Deploy from branch → main → /(root)**. The expected URL is `https://flowbeacon-labs.github.io/last-island-3d/`. The build is offline-capable and needs no server.
+Upload `index.html`, `game.js`, `style.css`, and `README.md` to the root of a public `last-island-3d` repository; configure GitHub Pages **Settings → Pages → Deploy from branch → main → /(root)**. The expected URL is `https://flowbeacon-labs.github.io/last-island/`. The build is offline-capable and needs no server.
 
 ---
 
@@ -72,7 +96,7 @@ The included Playwright smoke test requires Chromium and Python Playwright and c
 1. Create a **public** GitHub repository named `last-island-3d` in account or organization `flowbeacon-labs` if not already created.
 2. Upload the four root files (`index.html`, `game.js`, `style.css`, `README.md`) to the repository's `main` branch. You may also upload `tests/smoke.py` for your own reference. Files must remain in the root, not within an extra nested folder.
 3. Under **Settings → Pages**, select **Deploy from a branch**, choose `main`, folder `/(root)`, and save.
-4. After Pages deployment succeeds, open `https://flowbeacon-labs.github.io/last-island-3d/`.
+4. After Pages deployment succeeds, open `https://flowbeacon-labs.github.io/last-island/`.
 5. Once published, add this URL as a card to Flowbeacon Arcade.
 
 ## Limitations and next steps
