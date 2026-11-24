@@ -39,7 +39,7 @@ with sync_playwright() as p:
     assert page.locator('#overlay').is_hidden()
     assert page.evaluate('window.__gameTest.bots().length')==12
     assert page.locator('#alive').inner_text()=='13'
-    assert page.evaluate('window.__gameTest.loot().length')==20
+    assert page.evaluate('window.__gameTest.loot().length')==40
     assert page.evaluate('window.__gameTest.bots()[0].hp')==125, 'Hard difficulty should have stronger bots'
     assert page.evaluate('window.__gameTest.player().dropping')
     assert page.locator('#drop-status').is_visible()
@@ -87,8 +87,12 @@ with sync_playwright() as p:
 
     assert page.locator('#weapon').inner_text()=='Heavy Blaster'
     page.evaluate('window.__gameTest.player().hp=10000; for(let i=0;i<900;i++) window.__gameTest.step(1/60)')
+    assert page.evaluate('window.__gameTest.freeAt(110,110)') is True, 'Expanded outer terrain must be walkable'
+    assert page.evaluate('window.__gameTest.freeAt(140,0)') is False, 'Outside island must remain blocked'
+    outer_route=page.evaluate('window.__gameTest.pathfind({x:-105,z:95},{x:-85,z:95})')
+    assert outer_route, 'Expanded navigation grid must cover outer island'
     zone=page.evaluate('window.__gameTest.zone().r')
-    assert zone<59, zone
+    assert zone<122, zone
     page.keyboard.down('KeyW')
     page.evaluate('for(let i=0;i<15;i++)window.__gameTest.step(1/60)')
     page.keyboard.up('KeyW')
@@ -107,7 +111,7 @@ with sync_playwright() as p:
     page.evaluate('window.__gameTest.damage(window.__gameTest.player(),200,null)')
     assert 'ELIMINATED' in page.locator('#overlay-title').inner_text(), 'Loss not triggered'
     assert not errors,errors
-    print('PASS desktop UI: 12 bots / 20 loot crates / 3 weapons / reload / armor / storm / victory / defeat / no JS errors')
+    print('PASS desktop UI: 12 bots / 40 loot crates / 3 weapons / reload / armor / storm / victory / defeat / no JS errors')
     mobile=b.new_page(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
     mobile.evaluate(MOCK_GL)
     mobile.on('pageerror',lambda err:errors.append('mobile '+str(err)))
