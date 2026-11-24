@@ -181,12 +181,13 @@ function steerBotAroundCover(bot,destination,dt){
 
 function closestEnemy(bot){let target=player.alive?player:null,best=target?dist(bot,target):1e6;for(const other of bots){if(other===bot||!other.alive)continue;const d=dist(bot,other);if(d<best){best=d;target=other;}}return[target,best];}
 function angleDelta(a,b){return Math.atan2(Math.sin(a-b),Math.cos(a-b));}
+/* Camera-right is (-cos(yaw), +sin(yaw)); use that vector for D/right and joystick-right. */
 function step(dt){if(mode!=='playing')return;
  if(player.dropping){
   const left=(keyState.KeyA||keyState.ArrowLeft?-1:0)+(keyState.KeyD||keyState.ArrowRight?1:0)+touch.x;
   const forward=(keyState.KeyW||keyState.ArrowUp?1:0)-(keyState.KeyS||keyState.ArrowDown?1:0)-touch.z;
   const speed=7.5/Math.max(1,Math.hypot(left,forward));
-  move(player,(Math.cos(yaw)*left+Math.sin(yaw)*forward)*speed,(Math.cos(yaw)*forward-Math.sin(yaw)*left)*speed,dt);
+  move(player,(-Math.cos(yaw)*left+Math.sin(yaw)*forward)*speed,(Math.cos(yaw)*forward+Math.sin(yaw)*left)*speed,dt);
   player.y=Math.max(0,player.y-6.7*dt);player.yaw=yaw;
   if(player.y===0){player.dropping=false;player.vy=0;ui('drop-status').hidden=true;notify('🏝️ Landed! Collect loot and survive the storm!');sfx(660,.13);}
   return;
@@ -196,7 +197,7 @@ function step(dt){if(mode!=='playing')return;
  const left=(keyState.KeyA||keyState.ArrowLeft?-1:0)+(keyState.KeyD||keyState.ArrowRight?1:0)+touch.x;
  const forward=(keyState.KeyW||keyState.ArrowUp?1:0)-(keyState.KeyS||keyState.ArrowDown?1:0)-touch.z;
  const norm=Math.max(1,Math.hypot(left,forward));const velocity=8.6;
- move(player,(Math.cos(yaw)*left+Math.sin(yaw)*forward)*velocity/norm,(Math.cos(yaw)*forward-Math.sin(yaw)*left)*velocity/norm,dt);
+ move(player,(-Math.cos(yaw)*left+Math.sin(yaw)*forward)*velocity/norm,(Math.cos(yaw)*forward+Math.sin(yaw)*left)*velocity/norm,dt);
  player.yaw=yaw;player.shot=Math.max(0,player.shot-dt);
  if(player.reload>0){player.reload=Math.max(0,player.reload-dt);if(player.reload===0){const w=WEAPONS[player.weapon],slot=player.slots[player.weapon],n=Math.min(w.mag-slot.ammo,slot.reserve);slot.ammo+=n;slot.reserve-=n;notify('✅ Reloaded!');updateInventory();}}
  if(keyState.KeyR){keyState.KeyR=false;beginReload();}for(const [code,type] of [['Digit1','blaster'],['Digit2','rapid'],['Digit3','heavy']])if(keyState[code]){keyState[code]=false;equipWeapon(type);}
