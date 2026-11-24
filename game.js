@@ -28,10 +28,11 @@ function perspective(fov,aspect,near,far){const f=1/Math.tan(fov/2),out=new Floa
 function lookAt(eye,target){let z=[eye[0]-target[0],eye[1]-target[1],eye[2]-target[2]];let len=Math.hypot(...z)||1;z=z.map(v=>v/len);let x=[z[2],0,-z[0]];len=Math.hypot(...x)||1;x=x.map(v=>v/len);let y=[z[1]*x[2]-z[2]*x[1],z[2]*x[0]-z[0]*x[2],z[0]*x[1]-z[1]*x[0]];const out=new Float32Array(16);out[0]=x[0];out[1]=y[0];out[2]=z[0];out[4]=x[1];out[5]=y[1];out[6]=z[1];out[8]=x[2];out[9]=y[2];out[10]=z[2];out[12]=-(x[0]*eye[0]+x[1]*eye[1]+x[2]*eye[2]);out[13]=-(y[0]*eye[0]+y[1]*eye[1]+y[2]*eye[2]);out[14]=-(z[0]*eye[0]+z[1]*eye[1]+z[2]*eye[2]);out[15]=1;return out;}
 function modelMatrix(x,y,z,sx,sy,sz,angle=0){const a=Math.cos(angle),b=Math.sin(angle);return new Float32Array([a*sx,0,-b*sx,0,0,sy,0,0,b*sz,0,a*sz,0,x,y,z,1]);}
 let vp;function draw(shape,x,y,z,sx,sy,sz,color,angle=0){const m=models[shape];gl.bindBuffer(gl.ARRAY_BUFFER,m.buffer);gl.vertexAttribPointer(attribPos,3,gl.FLOAT,false,24,0);gl.vertexAttribPointer(attribNormal,3,gl.FLOAT,false,24,12);gl.enableVertexAttribArray(attribPos);gl.enableVertexAttribArray(attribNormal);gl.uniformMatrix4fv(uModel,false,modelMatrix(x,y,z,sx,sy,sz,angle));gl.uniform3fv(uColor,colorHex(color));gl.drawArrays(gl.TRIANGLES,0,m.count);}
+const ISLAND_HALF=128,PLAY_LIMIT=125,STORM_START=122;
 const staticMeshes=[],obstacles=[],supplies=[],loot=[];
 const WEAPONS={blaster:{name:'Blaster',damage:34,delay:.26,speed:43,mag:12,reserve:72,color:0xffde65},rapid:{name:'Rapid Blaster',damage:16,delay:.10,speed:49,mag:28,reserve:140,color:0x83efff},heavy:{name:'Heavy Blaster',damage:54,delay:.64,speed:38,mag:6,reserve:42,color:0xffaa79}};
-const KIT_POSITIONS=[[11,14],[-17,10],[37,11],[-34,-19],[10,-35],[40,-34],[-42,38],[30,36]];
-const CAMP_POSITIONS=[[-48,-6],[-26,42],[2,44],[44,7],[8,-48],[-48,-42],[44,41],[-4,-17],[-25,-45],[49,-20],[-14,20],[27,43]];
+const KIT_POSITIONS=[[11,14],[-17,10],[37,11],[-34,-19],[10,-35],[40,-34],[-42,38],[30,36],[-102,52],[96,78],[-89,-88],[82,-101],[5,103],[-105,4],[103,-22],[42,-89]];
+const CAMP_POSITIONS=[[-48,-6],[-26,42],[2,44],[44,7],[8,-48],[-48,-42],[44,41],[-4,-17],[-25,-45],[49,-20],[-14,20],[27,43],[-104,-73],[-90,25],[-78,103],[-28,91],[27,103],[82,96],[108,35],[106,-52],[63,-107],[-23,-105],[-101,-19],[23,-83]];
 const DIFFICULTIES={easy:{speed:3.4,accuracy:.43,aggression:1.25,damage:8,hp:75},normal:{speed:4.9,accuracy:1,aggression:2.5,damage:12,hp:100},hard:{speed:6.0,accuracy:1.75,aggression:4.3,damage:16,hp:125}};
 const HEROES={explorer:{label:'Explorer',shirt:0x356cc5,hat:0xffd66b},ranger:{label:'Ranger',shirt:0x3eaa76,hat:0xe99555},astronaut:{label:'Space Scout',shirt:0xb17cea,hat:0xe9f0ff}};
 let difficulty='normal',hero='explorer',aimAssist=true;
@@ -64,43 +65,41 @@ function cycleWeapon(dir=1){const held=Object.keys(WEAPONS).filter(w=>player.slo
 const put=(shape,x,y,z,sx,sy,sz,color,angle=0)=>staticMeshes.push({shape,x,y,z,sx,sy,sz,color,angle});
 const layoutRand=rng(91843);
 function world(){staticMeshes.length=0;obstacles.length=0;supplies.length=0;loot.length=0;
- put('box',0,-2.8,0,129,5,129,COLORS.soil);put('box',0,-.25,0,128,.7,128,COLORS.grass); // Square stylized island with blue sea outside
- put('box',0,-9,0,400,8,400,COLORS.sea);
- for(let i=0;i<50;i++){const x=rndCoord(),z=rndCoord();if(Math.abs(x)<6&&Math.abs(z)<6)continue;put('box',x,-.06,z,rnd(1,3),.12,rnd(1,3),i%2?COLORS.lightGrass:COLORS.grass);}
- // Island landmarks and subtle elevation shapes: landmarks stay decorative so the walkable navigation remains reliable.
- for(const [x,z,w,h,color] of [[-45,25,13,3,0xe6bd88],[41,15,12,4,0xb9beee],[-10,42,16,2.4,0xd6b59c],[25,-45,11,3,0xc7a9e4]]){
-  put('cylinder',x,h*.27,z,w,h*.55,w,color);
-  put('cone',x,h*.65,z,w*1.04,h*.45,w*1.04,color);
+ // Four times the former land area; the sea remains safely outside walkable terrain.
+ put('box',0,-2.8,0,ISLAND_HALF*2+1,5,ISLAND_HALF*2+1,COLORS.soil);
+ put('box',0,-.25,0,ISLAND_HALF*2,.7,ISLAND_HALF*2,COLORS.grass);
+ put('box',0,-9,0,620,8,620,COLORS.sea);
+ for(let i=0;i<115;i++){const x=rndCoord(),z=rndCoord();if(Math.abs(x)<7&&Math.abs(z)<7)continue;put('box',x,-.06,z,rnd(1,3.8),.12,rnd(1,3.8),i%2?COLORS.lightGrass:COLORS.grass);}
+ // Four original landmarks plus new corners, landmarks remain decorative.
+ for(const [x,z,w,h,color] of [[-45,25,13,3,0xe6bd88],[41,15,12,4,0xb9beee],[-10,42,16,2.4,0xd6b59c],[25,-45,11,3,0xc7a9e4],[-87,73,17,4,0xc5b1e2],[91,71,15,3,0xf7cfa2],[-93,-83,18,4,0xc7bddc],[90,-92,17,3,0xe7cdb0]]){
+  put('cylinder',x,h*.27,z,w,h*.55,w,color);put('cone',x,h*.65,z,w*1.04,h*.45,w*1.04,color);
  }
- // A visible beacon and a beachside lookout add orientation and distinctive scenery.
- put('cylinder',-47,4,-43,1.5,8,1.5,0xf8f1d2);
- put('sphere',-47,8.5,-43,2.2,2.2,2.2,0xffe578);
- put('box',44,2.4,-45,5,4,5,0xffdcb4);
- put('cone',44,5.5,-45,7,3.5,7,0xfc7c83);
- // Low houses and rocks provide cover, but don't create a giant impassable maze.
- const houses=[[-28,2],[31,-20],[-12,-29],[21,28]];
+ // Distinct landmarks help players navigate the larger island.
+ for(const [x,z,color] of [[-111,-108,0xffe578],[107,111,0x92ebff],[-106,104,0xffa3e5],[107,-108,0xffe68e]]){
+  put('cylinder',x,5,z,1.5,10,1.5,0xf8f1d2);put('sphere',x,10.5,z,2.4,2.4,2.4,color);
+ }
+ const houses=[[-28,2],[31,-20],[-12,-29],[21,28],[-91,47],[-78,-63],[81,57],[93,-72],[-42,91],[43,94],[-96,4],[97,8],[2,103],[8,-102]];
  houses.forEach(([x,z],i)=>{put('box',x,2.5,z,8,5,7,i%2?0xffd69c:0xf1d6b7);put('cone',x,6,z,11,4,10,i%2?COLORS.roof2:COLORS.roof,Math.PI/4);put('box',x,1.9,z+3.53,1.8,3,.2,COLORS.wood);obstacles.push({x,z,r:5.1});});
- for(let i=0;i<22;i++){let x=(layoutRand()-.5)*105,z=(layoutRand()-.5)*105;if(Math.hypot(x,z)<13||obstacles.some(o=>Math.hypot(x-o.x,z-o.z)<8))continue;const sz=1.8+layoutRand()*2.4;put('sphere',x,sz*.35,z,sz*1.8,sz,sz*1.25,i%2?COLORS.stone:COLORS.stone2);obstacles.push({x,z,r:sz*.85});}
- for(let i=0;i<44;i++){let x=(layoutRand()-.5)*117,z=(layoutRand()-.5)*117;if(Math.hypot(x,z)<12||obstacles.some(o=>Math.hypot(x-o.x,z-o.z)<7))continue;const h=3.3+layoutRand()*2.5;put('cylinder',x,h/2,z,.8,h,.8,COLORS.trunk);for(let j=0;j<3;j++)put('cone',x,h+1+j*.9,z,3.7-j*.55,2.9,3.7-j*.55,j%2?COLORS.palm:COLORS.palm2);}
- for(const [x,z] of [[8,9],[-36,28],[38,22],[-35,-35],[13,-38],[37,-37]])supplies.push({x,z,active:true});
- KIT_POSITIONS.forEach(([x,z],i)=>loot.push({x,z,type:i%4===0?'armor':i%4===1?'rapid':i%4===2?'ammo':'heavy',active:true}));
- // Additional recognizable supply camps, with pickups distributed around the entire island.
+ // Larger rock clusters provide cover in the extended outer districts.
+ for(let i=0;i<70;i++){const x=rndCoord(),z=rndCoord();if(Math.hypot(x,z)<13||obstacles.some(o=>Math.hypot(x-o.x,z-o.z)<8))continue;const sz=1.8+layoutRand()*2.4;put('sphere',x,sz*.35,z,sz*1.8,sz,sz*1.25,i%2?COLORS.stone:COLORS.stone2);obstacles.push({x,z,r:sz*.85});}
+ for(let i=0;i<100;i++){const x=rndCoord(),z=rndCoord();if(Math.hypot(x,z)<12||obstacles.some(o=>Math.hypot(x-o.x,z-o.z)<7))continue;const h=3.3+layoutRand()*2.5;put('cylinder',x,h/2,z,.8,h,.8,COLORS.trunk);for(let j=0;j<3;j++)put('cone',x,h+1+j*.9,z,3.7-j*.55,2.9,3.7-j*.55,j%2?COLORS.palm:COLORS.palm2);}
+ for(const [x,z] of [[8,9],[-36,28],[38,22],[-35,-35],[13,-38],[37,-37],[-108,74],[102,65],[-92,-98],[84,-101],[7,108],[-109,-12],[107,-27],[46,-91]]){const pos=findOpenCamp(x,z);supplies.push({...pos,active:true});}
+ KIT_POSITIONS.forEach(([x,z],i)=>{const pos=findOpenCamp(x,z);loot.push({...pos,type:i%4===0?'armor':i%4===1?'rapid':i%4===2?'ammo':'heavy',active:true});});
  CAMP_POSITIONS.forEach(([x,z],i)=>{
-  const point=freeAt(x,z,.8)?{x,z}:findOpenCamp(x,z);
-  loot.push({...point,type:['ammo','armor','rapid','heavy'][i%4],active:true});
+  const point=findOpenCamp(x,z);loot.push({...point,type:['ammo','armor','rapid','heavy'][i%4],active:true});
   put('box',point.x,-.01,point.z,4,.16,4,i%2?0xf3d7a1:0xa3eab8);
   for(const dx of [-1.4,1.4])put('cylinder',point.x+dx,.55,point.z-1.4,.18,1.1,.18,0xffffff);
  });
 }
-function rndCoord(){return (layoutRand()-.5)*112;}
-function findOpenCamp(x,z){for(let radius=2;radius<17;radius+=2)for(let i=0;i<16;i++){const a=i*TAU/16,xx=clamp(x+Math.cos(a)*radius,-57,57),zz=clamp(z+Math.sin(a)*radius,-57,57);if(freeAt(xx,zz,.8))return{x:xx,z:zz};}return{x:0,z:0};}
+function rndCoord(){return (layoutRand()-.5)*(ISLAND_HALF*2-18);}
+function findOpenCamp(x,z){if(freeAt(x,z,.8))return{x,z};for(let radius=2;radius<25;radius+=2)for(let i=0;i<16;i++){const a=i*TAU/16,xx=clamp(x+Math.cos(a)*radius,-PLAY_LIMIT,PLAY_LIMIT),zz=clamp(z+Math.sin(a)*radius,-PLAY_LIMIT,PLAY_LIMIT);if(freeAt(xx,zz,.8))return{x:xx,z:zz};}return{x:0,z:0};}
 
 world();
-const BOT_COUNT=12,matchSeconds=195;
-let player,bots,bullets,mode='menu',time=0,zoneR=59,zoneX=0,zoneZ=0,kills=0,noiseTime=0,last=0,acc=0,hopHeld=false,muted=false,mouseDown=false,pointerId=-1,pointerX=0,pointerY=0,hitFlash=0,hitMarker=0;
+const BOT_COUNT=12,matchSeconds=330;
+let player,bots,bullets,mode='menu',time=0,zoneR=STORM_START,zoneX=0,zoneZ=0,kills=0,noiseTime=0,last=0,acc=0,hopHeld=false,muted=false,mouseDown=false,pointerId=-1,pointerX=0,pointerY=0,hitFlash=0,hitMarker=0;
 let yaw=0,pitch=.22;const keyState={},touch={x:0,z:0,fire:false,jump:false};
 const botColors=[0xf8796e,0xffc36e,0xc89dff,0x86dccc,0xf78fba,0xe1b777];
-function spawn(){player={id:0,x:0,z:0,y:23,vy:0,yaw:0,hp:100,armor:0,alive:true,shot:0,dropping:true};replenish(player,'blaster');player.slots={blaster:{ammo:WEAPONS.blaster.mag,reserve:WEAPONS.blaster.reserve}};bots=[];const random=rng(2026);for(let i=0;i<BOT_COUNT;i++){const a=i*TAU/BOT_COUNT+random()*.3,d=19+random()*33;bots.push({id:i+1,x:Math.sin(a)*d,z:Math.cos(a)*d,y:0,vy:0,yaw:a+Math.PI,hp:DIFFICULTIES[difficulty].hp,alive:true,shot:1+random()*2,think:random()*2,strafe:i%2?1:-1,tactic:'advance',tacticTimer:0,path:[],pathTimer:0,pathGoal:null,stuckTime:0,lastX:Math.sin(a)*d,lastZ:Math.cos(a)*d,color:botColors[i%botColors.length],step:0});}bullets=[];for(const s of supplies)s.active=true;for(const box of loot)box.active=true;hitFlash=0;hitMarker=0;time=0;zoneR=59;zoneX=0;zoneZ=0;kills=0;yaw=0;pitch=.22;last=0;acc=0;notify('🪂 Parachuting! Steer toward a safe landing spot.');ui('drop-status').hidden=false;ui('drop-status').textContent='🪂 PARACHUTING · steer to land';}
+function spawn(){player={id:0,x:0,z:0,y:23,vy:0,yaw:0,hp:100,armor:0,alive:true,shot:0,dropping:true};replenish(player,'blaster');player.slots={blaster:{ammo:WEAPONS.blaster.mag,reserve:WEAPONS.blaster.reserve}};bots=[];const random=rng(2026);for(let i=0;i<BOT_COUNT;i++){const a=i*TAU/BOT_COUNT+random()*.3,d=42+random()*67;const loc=findOpenCamp(Math.sin(a)*d,Math.cos(a)*d);bots.push({id:i+1,x:loc.x,z:loc.z,y:0,vy:0,yaw:a+Math.PI,hp:DIFFICULTIES[difficulty].hp,alive:true,shot:1+random()*2,think:random()*2,strafe:i%2?1:-1,tactic:'advance',tacticTimer:0,path:[],pathTimer:0,pathGoal:null,stuckTime:0,lastX:loc.x,lastZ:loc.z,color:botColors[i%botColors.length],step:0});}bullets=[];for(const s of supplies)s.active=true;for(const box of loot)box.active=true;hitFlash=0;hitMarker=0;time=0;zoneR=STORM_START;zoneX=0;zoneZ=0;kills=0;yaw=0;pitch=.22;last=0;acc=0;notify('🪂 Parachuting! Steer toward a safe landing spot.');ui('drop-status').hidden=false;ui('drop-status').textContent='🪂 PARACHUTING · steer to land';}
 function notify(v){ui('notice').textContent=v;noiseTime=2.6;}
 function toggleOverlay(title,desc,button,fn){ui('pre-match').hidden=!(mode==='menu'||mode==='over');ui('overlay-title').textContent=title;ui('overlay-text').textContent=desc;ui('start').textContent=button;ui('start').onclick=fn;ui('overlay').hidden=false;}
 function start(){difficulty=difficultySelect.value;persistPrefs();spawn();mode='playing';ui('overlay').hidden=true;ui('pre-match').hidden=false;updateInventory();Object.keys(keyState).forEach(k=>keyState[k]=false);touch.fire=false;touch.jump=false;touch.x=0;touch.z=0;cv.focus();}
@@ -109,7 +108,7 @@ function end(won){if(mode!=='playing')return;mode='over';toggleOverlay(won?'🏆
 function pause(){if(mode==='playing'){mode='paused';toggleOverlay('⏸️ MATCH PAUSED','Your current match is frozen. Continue when ready.','RESUME',()=>{mode='playing';ui('overlay').hidden=true;last=0;});}else if(mode==='paused'){mode='playing';ui('overlay').hidden=true;last=0;}}
 ui('pause').addEventListener('click',pause);ui('sound').addEventListener('click',()=>{muted=!muted;ui('sound').textContent=muted?'🔇':'🔊';});
 let audio;function sfx(freq,duration=.05){if(muted)return;try{audio??=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const o=audio.createOscillator(),v=audio.createGain();o.type='square';o.frequency.setValueAtTime(freq,audio.currentTime);v.gain.setValueAtTime(.012,audio.currentTime);v.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(v).connect(audio.destination);o.start();o.stop(audio.currentTime+duration);}catch{}}
-function insideIsland(x,z){return Math.max(Math.abs(x),Math.abs(z))<61.5;}
+function insideIsland(x,z){return Math.max(Math.abs(x),Math.abs(z))<PLAY_LIMIT;}
 function freeAt(x,z,r=.75){return insideIsland(x,z)&&!obstacles.some(o=>Math.hypot(x-o.x,z-o.z)<o.r+r);}
 function move(entity,vx,vz,dt){const dx=vx*dt,dz=vz*dt;if(freeAt(entity.x+dx,entity.z))entity.x+=dx;if(freeAt(entity.x,entity.z+dz))entity.z+=dz;}
 function damage(target,amount,owner){if(!target.alive)return;
@@ -140,7 +139,7 @@ function fire(shooter){if(!shooter.alive||shooter.shot>0||(shooter===player&&pla
 
 // Coarse 4-unit navigation grid, rebuilt once for the island's circular cover.
 // A* uses 8-way traversal with corner-cut prevention, bounded search, and cached bot paths.
-const NAV_STEP=4,NAV_MIN=-60,NAV_DIM=31;
+const NAV_STEP=6,NAV_MIN=-126,NAV_DIM=43;
 let navWalkable=null;
 const navId=(x,z)=>z*NAV_DIM+x;
 const navCoord=(world)=>clamp(Math.round((world-NAV_MIN)/NAV_STEP),0,NAV_DIM-1);
@@ -192,7 +191,7 @@ function step(dt){if(mode!=='playing')return;
   if(player.y===0){player.dropping=false;player.vy=0;ui('drop-status').hidden=true;notify('🏝️ Landed! Collect loot and survive the storm!');sfx(660,.13);}
   return;
  }
- time+=dt;const fraction=clamp(time/matchSeconds,0,1);zoneR=lerp(59,8,fraction**.7);zoneX=lerp(0,7,fraction);zoneZ=lerp(0,-6,fraction);
+ time+=dt;const fraction=clamp(time/matchSeconds,0,1);zoneR=lerp(STORM_START,9,fraction**.72);zoneX=lerp(0,12,fraction);zoneZ=lerp(0,-10,fraction);
  hitFlash=Math.max(0,hitFlash-dt);hitMarker=Math.max(0,hitMarker-dt);ui('damage-flash').style.opacity=String(hitFlash/.42*.43);ui('crosshair').classList.toggle('hit',hitMarker>0);
  const left=(keyState.KeyA||keyState.ArrowLeft?-1:0)+(keyState.KeyD||keyState.ArrowRight?1:0)+touch.x;
  const forward=(keyState.KeyW||keyState.ArrowUp?1:0)-(keyState.KeyS||keyState.ArrowDown?1:0)-touch.z;
@@ -221,7 +220,7 @@ function step(dt){if(mode!=='playing')return;
  }
  const baseAngle=Math.atan2(target.x-b.x,target.z-b.z);
  const goal=outside?{x:zoneX,z:zoneZ}:b.tactic==='retreat'?{x:b.x-(target.x-b.x)*.65,z:b.z-(target.z-b.z)*.65}:b.tactic==='flank'?{x:target.x+Math.cos(baseAngle)*b.strafe*9,z:target.z-Math.sin(baseAngle)*b.strafe*9}:b.tactic==='evade'||b.tactic==='strafe'?{x:b.x+Math.cos(baseAngle)*b.strafe*9,z:b.z-Math.sin(baseAngle)*b.strafe*9}:target;
- goal.x=clamp(goal.x,-57,57);goal.z=clamp(goal.z,-57,57);
+ goal.x=clamp(goal.x,-PLAY_LIMIT,PLAY_LIMIT);goal.z=clamp(goal.z,-PLAY_LIMIT,PLAY_LIMIT);
  // Use A* when cover obstructs the desired destination. Retain tactical behavior in clear space.
  const heading=steerBotAroundCover(b,goal,dt);
  b.yaw+=clamp(angleDelta(heading,b.yaw),-dt*3.1,dt*3.1);
@@ -259,12 +258,12 @@ function character(c,isPlayer){if(!c.alive)return;const x=c.x,z=c.z,y=c.y;const 
 const mapCanvas=ui('minimap'),mapCtx=mapCanvas.getContext('2d');
 function drawMap(){if(!mapCtx||!player)return;const c=mapCtx,w=mapCanvas.width,h=mapCanvas.height;
  c.clearRect(0,0,w,h);c.fillStyle='#368e69';c.fillRect(0,0,w,h);
- const mx=x=>(x+64)/128*w,mz=z=>(z+64)/128*h;
- c.strokeStyle='#ffffff22';c.lineWidth=1;for(let i=-48;i<=48;i+=16){c.beginPath();c.moveTo(mx(i),0);c.lineTo(mx(i),h);c.moveTo(0,mz(i));c.lineTo(w,mz(i));c.stroke();}
- for(const o of obstacles){c.fillStyle='#42566c';c.beginPath();c.arc(mx(o.x),mz(o.z),Math.max(1,o.r*w/128),0,TAU);c.fill();}
+ const mx=x=>(x+ISLAND_HALF)/(2*ISLAND_HALF)*w,mz=z=>(z+ISLAND_HALF)/(2*ISLAND_HALF)*h;
+ c.strokeStyle='#ffffff22';c.lineWidth=1;for(let i=-96;i<=96;i+=32){c.beginPath();c.moveTo(mx(i),0);c.lineTo(mx(i),h);c.moveTo(0,mz(i));c.lineTo(w,mz(i));c.stroke();}
+ for(const o of obstacles){c.fillStyle='#42566c';c.beginPath();c.arc(mx(o.x),mz(o.z),Math.max(1,o.r*w/(2*ISLAND_HALF)),0,TAU);c.fill();}
  for(const box of loot)if(box.active){c.fillStyle='#ffdc61';c.fillRect(mx(box.x)-2,mz(box.z)-2,4,4);}
  for(const s of supplies)if(s.active){c.fillStyle='#72f3a4';c.fillRect(mx(s.x)-2,mz(s.z)-2,4,4);}
- c.strokeStyle='#87e8ff';c.lineWidth=3;c.beginPath();c.arc(mx(zoneX),mz(zoneZ),zoneR*w/128,0,TAU);c.stroke();
+ c.strokeStyle='#87e8ff';c.lineWidth=3;c.beginPath();c.arc(mx(zoneX),mz(zoneZ),zoneR*w/(2*ISLAND_HALF),0,TAU);c.stroke();
  for(const b of bots)if(b.alive){c.fillStyle='#ff9d67';c.beginPath();c.arc(mx(b.x),mz(b.z),3,0,TAU);c.fill();}
  c.fillStyle='#d6ff86';c.strokeStyle='#183d54';c.lineWidth=1.5;c.beginPath();c.arc(mx(player.x),mz(player.z),4.7,0,TAU);c.fill();c.stroke();
  c.save();c.translate(mx(player.x),mz(player.z));c.rotate(-yaw);c.fillStyle='#ffffff';c.beginPath();c.moveTo(0,-9);c.lineTo(3.5,-3.5);c.lineTo(-3.5,-3.5);c.closePath();c.fill();c.restore();
